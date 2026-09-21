@@ -3,6 +3,8 @@ package com.yonyou.ncc.openapi.ui;
 import com.yonyou.ncc.openapi.model.OpenApiConfig;
 import com.yonyou.ncc.openapi.model.TokenInfo;
 import com.yonyou.ncc.openapi.service.OpenApiClient;
+import com.yonyou.ncc.openapi.settings.DraftStore;
+import com.yonyou.ncc.openapi.settings.OpenApiDraft;
 import com.yonyou.ncc.openapi.settings.OpenApiSettings;
 import com.yonyou.ncc.openapi.util.JsonUtils;
 
@@ -46,6 +48,23 @@ public final class TokenPanel extends JPanel {
         add(FormPanel.scrollable(buildContent()), BorderLayout.CENTER);
         grantTypeBox.addActionListener(e -> updateFieldState());
         updateFieldState();
+        bindSharedFields();
+    }
+
+    /** 与「生成签名」「发送接口」共用参数；拿到的 token 也会同步给「发送接口」。 */
+    private void bindSharedFields() {
+        FieldBinder binder = new FieldBinder(OpenApiDraft.getInstance().store());
+        binder.bind(DraftStore.BASE_URL, baseUrlField);
+        binder.bind(DraftStore.BIZ_CENTER, bizCenterField);
+        binder.bind(DraftStore.CLIENT_ID, clientIdField);
+        binder.bindPassword(DraftStore.CLIENT_SECRET, clientSecretField);
+        binder.bindArea(DraftStore.PUBLIC_KEY, publicKeyArea);
+        binder.bindCombo(DraftStore.GRANT_TYPE, grantTypeBox);
+        binder.bind(DraftStore.USER_NAME, userNameField);
+        binder.bindPassword(DraftStore.PASSWORD, passwordField);
+        binder.bind(DraftStore.ACCESS_TOKEN, accessTokenField);
+        binder.bind(DraftStore.SECURITY_KEY, securityKeyField);
+        binder.start();
     }
 
     private JPanel buildContent() {
@@ -53,8 +72,10 @@ public final class TokenPanel extends JPanel {
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        JLabel hint = new JLabel("生成 token：调用 " + OpenApiConfig.TOKEN_PATH
-                + "，client_secret 走 RSA(OAEP-SHA256) 加密，signature 由签名服务生成。");
+        JLabel hint = new JLabel("<html>生成 token：调用 " + OpenApiConfig.TOKEN_PATH
+                + "，client_secret 走 RSA(OAEP-SHA256) 加密，signature 由签名服务生成。"
+                + "<br/><b>三个窗口共用参数</b>：这里的 baseUrl / client_id / 应用密文 / 公钥改动会同步到另外两个窗口；"
+                + "生成的 access_token 会自动填到「发送接口」。</html>");
         container.add(hint);
         container.add(Box.createVerticalStrut(6));
 

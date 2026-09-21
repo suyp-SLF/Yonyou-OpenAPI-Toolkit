@@ -3,6 +3,8 @@ package com.yonyou.ncc.openapi.ui;
 import com.yonyou.ncc.openapi.model.OpenApiConfig;
 import com.yonyou.ncc.openapi.model.SignResult;
 import com.yonyou.ncc.openapi.service.SignService;
+import com.yonyou.ncc.openapi.settings.DraftStore;
+import com.yonyou.ncc.openapi.settings.OpenApiDraft;
 import com.yonyou.ncc.openapi.settings.OpenApiSettings;
 
 import javax.swing.BorderFactory;
@@ -47,12 +49,26 @@ public final class SignPanel extends JPanel {
     private final JTextField signField = FormPanel.readOnlyField();
     private final JTextField saltField = FormPanel.readOnlyField();
     private final JTextArea signedTextField = FormPanel.monoArea(2);
+    private final JTextArea cipherArea = FormPanel.monoArea(3);
 
     public SignPanel() {
         setLayout(new BorderLayout());
         add(FormPanel.scrollable(buildContent()), BorderLayout.CENTER);
         modeBox.addActionListener(e -> updateFieldState());
         updateFieldState();
+        bindSharedFields();
+    }
+
+    /** 与「生成token」「发送接口」共用一份参数：改一处，其余窗口自动同步。 */
+    private void bindSharedFields() {
+        FieldBinder binder = new FieldBinder(OpenApiDraft.getInstance().store());
+        binder.bind(DraftStore.CLIENT_ID, clientIdField);
+        binder.bindPassword(DraftStore.CLIENT_SECRET, clientSecretField);
+        binder.bind(DraftStore.USER_NAME, userNameField);
+        binder.bindPassword(DraftStore.PASSWORD, passwordField);
+        binder.bindArea(DraftStore.PUBLIC_KEY, publicKeyArea);
+        binder.bindArea(DraftStore.REQUEST_BODY, requestBodyArea);
+        binder.start();
     }
 
     private JPanel buildContent() {
@@ -60,7 +76,9 @@ public final class SignPanel extends JPanel {
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        JLabel hint = new JLabel("独立签名入口：按 SHA256(原文 + 盐值) 计算 signature，盐值由公钥派生，结果可复制。");
+        JLabel hint = new JLabel("<html>独立签名入口：signature = SHA256(原文 + 盐值)，盐值由公钥派生，<b>签名是固定值</b>；"
+                + "<br/>顺带给出手工调接口用的 client_secret 密文（RSA-OAEP 每次不同，任意一个都能用、可复用）。"
+                + "<br/><b>三个窗口共用参数</b>：client_id / 应用密文 / 公钥 / 请求体在本窗口改动，会同步到另外两个窗口。</html>");
         hint.setAlignmentX(LEFT_ALIGNMENT);
         container.add(hint);
         container.add(Box.createVerticalStrut(6));
@@ -95,6 +113,10 @@ public final class SignPanel extends JPanel {
         copy.addActionListener(e -> copySign());
         panel.add(copy);
 
+        JButton copyCipher = new JButton("复制密文");
+        copyCipher.addActionListener(e -> copyCipher());
+        panel.add(copyCipher);
+
         JButton load = new JButton("从设置载入");
         load.addActionListener(e -> loadFromSettings());
         panel.add(load);
@@ -115,7 +137,9 @@ public final class SignPanel extends JPanel {
         form.addRow("signature", signField);
         form.addRow("盐值(salt)", saltField);
         form.addRow("参与签名的原文", FormPanel.scroll(signedTextField, 60));
+        form.addRow("client_secret 密文(手工请求用)", FormPanel.scroll(cipherArea, 60));
         signedTextField.setEditable(false);
+        cipherArea.setEditable(false);
         panel.add(form);
         return panel;
     }
@@ -139,6 +163,7 @@ public final class SignPanel extends JPanel {
             signField.setText(result.getSign());
             saltField.setText(result.getSalt());
             signedTextField.setText(result.getSignedText());
+            cipherArea.setText(cipherText(mode));
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "签名计算失败：" + ex.getMessage(),
                     "Yonyou OpenAPI", JOptionPane.ERROR_MESSAGE);
@@ -154,6 +179,25 @@ public final class SignPanel extends JPanel {
         Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(sign), null);
     }
 
+    private void copyCipher() {
+        String cipher = cipherArea.getText();
+        if (cipher == null || cipher.isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "当前模式没有 client_secret 密文可复制（只有登录签名、用户名密码签名模式会生成）",
+                    "Yonyou OpenAPI", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(cipher), null);
+    }
+
+    /** 只有用到 client_secret 的模式才给密文；插件自己发请求时会重新加密。 */
+    private String cipherText(String mode) {
+        if (MODE_API.equals(mode) || MODE_CUSTOM.equals(mode)) {
+            return "";
+        }
+        return signService.clientSecretCipher(secret(), publicKeyArea.getText());
+    }
+
     private void loadFromSettings() {
         OpenApiConfig config = OpenApiSettings.getInstance().toConfig();
         clientIdField.setText(config.getClientId());
@@ -166,6 +210,7 @@ public final class SignPanel extends JPanel {
         signField.setText("");
         saltField.setText("");
         signedTextField.setText("");
+        cipherArea.setText("");
         customTextArea.setText("");
     }
 

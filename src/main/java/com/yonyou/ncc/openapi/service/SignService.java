@@ -1,6 +1,7 @@
 package com.yonyou.ncc.openapi.service;
 
 import com.yonyou.ncc.openapi.crypto.Signatures;
+import com.yonyou.ncc.openapi.crypto.OpenApiCipher;
 import com.yonyou.ncc.openapi.model.SignResult;
 
 /**
@@ -28,6 +29,19 @@ public final class SignService {
         return Signatures.sign(signedText, publicKey);
     }
 
+    /**
+     * 生成手工调接口时 client_secret 参数要用的密文。
+     * 注意：RSA-OAEP 每次都不同，但任意一个都能用、可反复复用。
+     */
+    public String clientSecretCipher(String clientSecret, String publicKey) {
+        try {
+            return OpenApiCipher.rsaEncrypt(publicKey, clientSecret);
+        } catch (Exception e) {
+            throw new IllegalStateException("密文生成失败：" + e.getClass().getSimpleName()
+                    + (e.getMessage() == null ? "" : " - " + e.getMessage()), e);
+        }
+    }
+
     private static String join(String... parts) {
         StringBuilder builder = new StringBuilder();
         for (String part : parts) {
@@ -36,4 +50,3 @@ public final class SignService {
         return builder.toString();
     }
 }
-

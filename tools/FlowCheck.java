@@ -6,7 +6,9 @@ import com.yonyou.ncc.openapi.model.CallResult;
 import com.yonyou.ncc.openapi.model.OpenApiConfig;
 import com.yonyou.ncc.openapi.model.TokenInfo;
 import com.yonyou.ncc.openapi.service.OpenApiClient;
+import com.yonyou.ncc.openapi.service.SignService;
 import com.yonyou.ncc.openapi.service.ServerHints;
+import com.yonyou.ncc.openapi.settings.DraftStore;
 import com.yonyou.ncc.openapi.util.JsonUtils;
 
 import java.net.InetSocketAddress;
@@ -161,6 +163,32 @@ public class FlowCheck {
             check("数字字段解析", "1000000", JsonUtils.findScalar(tokenLike, "expires_in"));
             check("absolute apiUrl 不被拼接", "http://other:8080/nccloud/api/x",
                     absoluteUrl("http://other:8080/nccloud/api/x"));
+
+            SignService signService = new SignService();
+            String sign1 = signService.loginSign(CLIENT_ID, CLIENT_SECRET, publicKey).getSign();
+            String sign2 = signService.loginSign(CLIENT_ID, CLIENT_SECRET, publicKey).getSign();
+            check("签名是固定值（两次一致）", sign1, sign2);
+
+            String cipher1 = signService.clientSecretCipher(CLIENT_SECRET, publicKey);
+            String cipher2 = signService.clientSecretCipher(CLIENT_SECRET, publicKey);
+            check("密文每次不同（OAEP 随机）", "false", String.valueOf(cipher1.equals(cipher2)));
+            check("密文长度固定(344)", "344", String.valueOf(cipher1.length()));
+            check("密文可被对应私钥解回明文", CLIENT_SECRET, rsaDecrypt(keyPair, cipher1));
+            check("旧密文同样可解（可复用）", CLIENT_SECRET, rsaDecrypt(keyPair, cipher2));
+
+            DraftStore draft = new DraftStore();
+            check("草稿初始为空", "", draft.get(DraftStore.CLIENT_ID));
+            java.util.concurrent.atomic.AtomicInteger notifications = new java.util.concurrent.atomic.AtomicInteger();
+            draft.addListener(key -> notifications.incrementAndGet());
+            draft.set(DraftStore.CLIENT_ID, CLIENT_ID);
+            draft.set(DraftStore.CLIENT_SECRET, CLIENT_SECRET);
+            check("草稿写入后可读", CLIENT_ID, draft.get(DraftStore.CLIENT_ID));
+            check("两个字段各广播一次", "2", String.valueOf(notifications.get()));
+            draft.set(DraftStore.CLIENT_ID, CLIENT_ID);
+            check("同值写入不广播（防回环）", "2", String.valueOf(notifications.get()));
+            draft.set(DraftStore.CLIENT_ID, "another");
+            check("值变化继续广播", "3", String.valueOf(notifications.get()));
+            check("null 归一为空串", "", draftGetNull(draft));
         } finally {
             server.stop(0);
         }
@@ -170,6 +198,11 @@ public class FlowCheck {
         javax.crypto.KeyGenerator keyGenerator = javax.crypto.KeyGenerator.getInstance("AES");
         keyGenerator.init(256);
         return keyGenerator.generateKey().getEncoded();
+    }
+
+    private static String draftGetNull(DraftStore draft) {
+        draft.set(DraftStore.API_URL, null);
+        return draft.get(DraftStore.API_URL);
     }
 
     /** 直接给完整 URL 时不应再拼 baseUrl。 */
