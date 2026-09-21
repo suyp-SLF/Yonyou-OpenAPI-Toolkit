@@ -48,7 +48,12 @@ public class FlowCheck {
 
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", PORT), 0);
         server.createContext("/nccloud/opm/accesstoken", exchange -> {
-            tokenQuery.set(exchange.getRequestURI().getRawQuery());
+            String query = exchange.getRequestURI().getRawQuery();
+            tokenQuery.set(query);
+            if (query != null && query.contains("biz_center=INVALID")) {
+                respond(exchange, "{\"success\":false,\"code\":\"\",\"message\":\"无效的账套编码，请检查\"}");
+                return;
+            }
             respond(exchange, "{\"code\":\"200\",\"data\":{\"access_token\":\"TOKEN-123\","
                     + "\"security_key\":\"" + securityKey + "\"}}");
         });
@@ -115,6 +120,24 @@ public class FlowCheck {
                     OpenApiCipher.aesDecrypt(securityKey, apiBody.get()));
             check("L1 响应体加解密往返一致", "{\"code\":\"200\",\"data\":{\"ok\":true},\"msg\":\"success\"}",
                     encrypted.getResponseBody());
+
+            OpenApiConfig badCenter = new OpenApiConfig();
+            badCenter.setBaseUrl(config.getBaseUrl());
+            badCenter.setBizCenter("INVALID");
+            badCenter.setClientId(CLIENT_ID);
+            badCenter.setClientSecret(CLIENT_SECRET);
+            badCenter.setPublicKey(publicKey);
+            String failure;
+            try {
+                client.fetchToken(badCenter, OpenApiConfig.GRANT_TYPE_CLIENT);
+                failure = "未抛异常";
+            } catch (Exception e) {
+                failure = e.getMessage();
+            }
+            check("账套编码错误时给出服务端原因", "true",
+                    String.valueOf(failure.contains("无效的账套编码")));
+            check("账套编码错误时附带排查提示", "true",
+                    String.valueOf(failure.contains("biz_center 要用该环境真实的业务中心/账套编码")));
         } finally {
             server.stop(0);
         }

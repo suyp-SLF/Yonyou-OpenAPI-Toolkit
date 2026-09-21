@@ -41,7 +41,7 @@ public final class OpenApiSettingsConfigurable implements Configurable {
         panel.addRow("服务地址(baseUrl)", baseUrlField);
 
         bizCenterField = new JTextField();
-        panel.addRow("业务中心(biz_center)", bizCenterField);
+        panel.addRow("业务中心/账套编码(biz_center)", bizCenterField);
 
         clientIdField = new JTextField();
         panel.addRow("应用编码(client_id)", clientIdField);
@@ -126,4 +126,3 @@ public final class OpenApiSettingsConfigurable implements Configurable {
         return field.getText() == null ? "" : field.getText().trim();
     }
 }
-

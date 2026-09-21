@@ -60,7 +60,7 @@ public final class TokenPanel extends JPanel {
 
         FormPanel form = new FormPanel();
         form.addRow("服务地址(baseUrl)", baseUrlField);
-        form.addRow("业务中心(biz_center)", bizCenterField);
+        form.addRow("业务中心/账套编码(biz_center)", bizCenterField);
         form.addRow("应用编码(client_id)", clientIdField);
         form.addRow("应用密文(client_secret)", clientSecretField);
         form.addRow("公钥(publicKey)", FormPanel.scroll(publicKeyArea, 70));
@@ -154,4 +154,3 @@ public final class TokenPanel extends JPanel {
         passwordField.setEnabled(passwordMode);
     }
 }
-

@@ -62,9 +62,25 @@ public final class OpenApiClient {
         String accessToken = JsonUtils.findString(body, "access_token");
         String securityKey = JsonUtils.findString(body, "security_key");
         if (accessToken == null) {
-            throw new IllegalStateException("获取 token 失败，HTTP " + response.statusCode() + "：" + body);
+            throw new IllegalStateException(describeTokenFailure(response.statusCode(), body));
         }
         return new TokenInfo(accessToken, securityKey, body);
+    }
+
+    /** 把服务端返回的失败原因挑出来，并对常见的 biz_center 取值问题给出提示。 */
+    static String describeTokenFailure(int status, String body) {
+        String code = JsonUtils.findString(body, "code");
+        String message = JsonUtils.findString(body, "message");
+        StringBuilder builder = new StringBuilder("获取 token 失败，HTTP ").append(status);
+        if (code != null && !code.isEmpty()) {
+            builder.append("，code=").append(code);
+        }
+        builder.append("：").append(message == null || message.isEmpty() ? body : message);
+        if (message != null && (message.contains("账套") || message.contains("业务中心"))) {
+            builder.append("\n提示：biz_center 要用该环境真实的业务中心/账套编码，多中心环境下每个中心编码不同，"
+                    + "可在 NCC 系统管理的业务中心/账套列表里查，或直接问系统管理员。");
+        }
+        return builder.toString();
     }
 
     public CallResult invokeApi(OpenApiConfig config, TokenInfo token) throws Exception {
@@ -123,4 +139,3 @@ public final class OpenApiClient {
         return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }
-

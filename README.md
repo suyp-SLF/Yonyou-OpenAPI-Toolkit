@@ -237,6 +237,7 @@ java -cp /tmp/flowcheck FlowCheck
 
 - **签名对不上**：先在「生成签名」里核对**参与签名的原文**与**盐值**。原文里公钥的换行会被自动去掉；如果服务端仍校验失败，检查 `client_secret` 是否与开放平台一致（不是 RSA 加密后的值）。
 - **取 token 返回失败**：多数是 `baseUrl` 写成了不带协议/端口的形式。插件按 `{baseUrl}nccloud/opm/accesstoken` 拼，`baseUrl` 需形如 `http://host:port/`。
+- **报「无效的账套编码，请检查」**：这是服务端在校验 `biz_center`，不是签名问题（HTTP 200 且返回结构化 JSON，说明签名与 `client_secret` 加密都已通过）。`biz_center` 要填该环境真实的业务中心/账套编码，多中心环境下每个中心编码不同——去 NCC 系统管理的业务中心/账套列表查，或问系统管理员；单中心环境可先留空试一次。
 - **L1~L4 解密报错**：`security_key` 必须是「生成token」返回的那个值；换 token 后旧 `security_key` 立即失效。
 - **RSA 报 `Wrong algorithm`**：这是老 jar 在 JDK 21 上的已知问题（`SecretKeySpec` 算法名写成 `AES/CTR/NoPadding`），插件已自行实现，不依赖该 jar。
 - **构建下载慢或失败**：把 `intellijPlatform { local(...) }` 指向本机 IDEA 即可跳过平台下载，见「平台依赖来源」。
@@ -244,4 +245,3 @@ java -cp /tmp/flowcheck FlowCheck
 ## License
 
 内部工具，未附开源许可。
-
