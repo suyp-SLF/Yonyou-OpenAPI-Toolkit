@@ -67,7 +67,8 @@ public final class SendPanel extends JPanel {
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        JLabel hint = new JLabel("<html>发送接口：access_token / security_key 会自动沿用「生成token」的结果，也可手工粘贴；"
+        JLabel hint = new JLabel("<html>发送接口(v" + PluginInfo.version()
+                + ")：access_token / security_key 会自动沿用「生成token」的结果，也可手工粘贴；"
                 + "请求/响应按 secret_level 自动加解密。"
                 + "<br/><b>三个窗口共用参数</b>：baseUrl / client_id / 公钥 / 请求体改动会同步到另外两个窗口。</html>");
         container.add(hint);

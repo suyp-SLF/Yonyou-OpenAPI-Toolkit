@@ -72,7 +72,8 @@ public final class TokenPanel extends JPanel {
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        JLabel hint = new JLabel("<html>生成 token：调用 " + OpenApiConfig.TOKEN_PATH
+        JLabel hint = new JLabel("<html>生成 token(v" + PluginInfo.version()
+                + ")：调用 " + OpenApiConfig.TOKEN_PATH
                 + "，client_secret 走 RSA(OAEP-SHA256) 加密，signature 由签名服务生成。"
                 + "<br/><b>三个窗口共用参数</b>：这里的 baseUrl / client_id / 应用密文 / 公钥改动会同步到另外两个窗口；"
                 + "生成的 access_token 会自动填到「发送接口」。</html>");

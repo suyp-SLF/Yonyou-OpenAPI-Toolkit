@@ -76,7 +76,8 @@ public final class SignPanel extends JPanel {
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        JLabel hint = new JLabel("<html>独立签名入口：signature = SHA256(原文 + 盐值)，盐值由公钥派生，<b>签名是固定值</b>；"
+        JLabel hint = new JLabel("<html>独立签名入口(v" + PluginInfo.version()
+                + ")：signature = SHA256(原文 + 盐值)，盐值由公钥派生，<b>签名是固定值</b>；"
                 + "<br/>顺带给出手工调接口用的 client_secret 密文（RSA-OAEP 每次不同，任意一个都能用、可复用）。"
                 + "<br/><b>三个窗口共用参数</b>：client_id / 应用密文 / 公钥 / 请求体在本窗口改动，会同步到另外两个窗口。</html>");
         hint.setAlignmentX(LEFT_ALIGNMENT);
