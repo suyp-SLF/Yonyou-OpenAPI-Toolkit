@@ -1,0 +1,39 @@
+<idea-plugin>
+    <id>com.yonyou.ncc.openapi.toolkit</id>
+    <name>Yonyou OpenAPI Toolkit</name>
+    <vendor>yonyou</vendor>
+
+    <description><![CDATA[
+    Yonyou OpenAPI Toolkit helps you work with Yonyou NCC / BIP OpenAPI from the IDE.
+    It provides three independent entries: generate signature, generate access token, and send API request.
+    <br/><br/>
+    用友 NCC / BIP OpenAPI 辅助工具，三个相互独立的功能入口：
+    <ul>
+      <li><b>生成签名</b>：输入 client_id / client_secret / 公钥即可得到 signature；</li>
+      <li><b>生成token</b>：调用 accesstoken 接口拿到 access_token 与 security_key；</li>
+      <li><b>发送接口</b>：按 secret_level 加解密请求与响应，直接调用业务接口。</li>
+    </ul>
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <resource-bundle>messages.YonyouBundle</resource-bundle>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <toolWindow id="YonyouSignature"
+                    anchor="right"
+                    factoryClass="com.yonyou.ncc.openapi.ui.SignToolWindowFactory"/>
+        <toolWindow id="YonyouToken"
+                    anchor="right"
+                    factoryClass="com.yonyou.ncc.openapi.ui.TokenToolWindowFactory"/>
+        <toolWindow id="YonyouApi"
+                    anchor="right"
+                    factoryClass="com.yonyou.ncc.openapi.ui.SendToolWindowFactory"/>
+
+        <applicationService serviceImplementation="com.yonyou.ncc.openapi.settings.OpenApiSettings"/>
+        <applicationConfigurable parentId="tools"
+                                id="com.yonyou.ncc.openapi.settings"
+                                displayName="Yonyou OpenAPI"
+                                instance="com.yonyou.ncc.openapi.settings.OpenApiSettingsConfigurable"/>
+    </extensions>
+</idea-plugin>
