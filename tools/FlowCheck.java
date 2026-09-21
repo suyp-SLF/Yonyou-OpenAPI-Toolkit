@@ -6,6 +6,8 @@ import com.yonyou.ncc.openapi.model.CallResult;
 import com.yonyou.ncc.openapi.model.OpenApiConfig;
 import com.yonyou.ncc.openapi.model.TokenInfo;
 import com.yonyou.ncc.openapi.service.OpenApiClient;
+import com.yonyou.ncc.openapi.service.ServerHints;
+import com.yonyou.ncc.openapi.util.JsonUtils;
 
 import java.net.InetSocketAddress;
 import java.net.URLDecoder;
@@ -137,7 +139,28 @@ public class FlowCheck {
             check("账套编码错误时给出服务端原因", "true",
                     String.valueOf(failure.contains("无效的账套编码")));
             check("账套编码错误时附带排查提示", "true",
-                    String.valueOf(failure.contains("biz_center 要用该环境真实的业务中心/账套编码")));
+                    String.valueOf(failure.contains("sm_busicenter")));
+
+            check("解密失败提示指向密文", "true",
+                    String.valueOf(ServerHints.hintFor("解密失败Decryption error").contains("密文")));
+            check("content-type 报错提示指向 POST+form", "true",
+                    String.valueOf(ServerHints.hintFor("invalid_request, Bad request content type")
+                            .contains("application/x-www-form-urlencoded")));
+            check("取 token 验签失败提示含拼接规则", "true",
+                    String.valueOf(ServerHints.hintFor("Failed to verify signature for get token")
+                            .contains("明文client_secret")));
+            check("接口验签失败提示含明文请求体", "true",
+                    String.valueOf(ServerHints.hintFor("Failed to verify signature for call api")
+                            .contains("明文请求体")));
+            check("权限报错提示指向开放平台授权", "true",
+                    String.valueOf(ServerHints.hintFor("第三方应用【yunjian】没有【/x】的权限").contains("授权")));
+
+            String tokenLike = "{\"success\":true,\"data\":{\"access_token\":\"T\",\"expires_in\":1000000,"
+                    + "\"security_level\":\"L0\"}}";
+            check("布尔字段解析", "true", String.valueOf(JsonUtils.isFalse("{\"success\":false}", "success")));
+            check("数字字段解析", "1000000", JsonUtils.findScalar(tokenLike, "expires_in"));
+            check("absolute apiUrl 不被拼接", "http://other:8080/nccloud/api/x",
+                    absoluteUrl("http://other:8080/nccloud/api/x"));
         } finally {
             server.stop(0);
         }
@@ -147,6 +170,14 @@ public class FlowCheck {
         javax.crypto.KeyGenerator keyGenerator = javax.crypto.KeyGenerator.getInstance("AES");
         keyGenerator.init(256);
         return keyGenerator.generateKey().getEncoded();
+    }
+
+    /** 直接给完整 URL 时不应再拼 baseUrl。 */
+    private static String absoluteUrl(String apiUrl) {
+        OpenApiConfig config = new OpenApiConfig();
+        config.setBaseUrl("http://127.0.0.1:18080/");
+        config.setApiUrl(apiUrl);
+        return config.apiFullUrl();
     }
 
     private static String rsaDecrypt(KeyPair keyPair, String cipherText) throws Exception {

@@ -29,6 +29,42 @@ public final class JsonUtils {
         return null;
     }
 
+    /** 取字段的原始标量值：字符串返回内容，数字/布尔返回字面量，找不到返回 null。 */
+    public static String findScalar(String json, String fieldName) {
+        if (json == null || fieldName == null) {
+            return null;
+        }
+        String needle = "\"" + fieldName + "\"";
+        int index = json.indexOf(needle);
+        while (index >= 0) {
+            int cursor = skipWhitespace(json, index + needle.length());
+            if (cursor < json.length() && json.charAt(cursor) == ':') {
+                cursor = skipWhitespace(json, cursor + 1);
+                if (cursor < json.length()) {
+                    char c = json.charAt(cursor);
+                    if (c == '"') {
+                        return readString(json, cursor + 1);
+                    }
+                    int end = cursor;
+                    while (end < json.length() && ",}] \t\r\n".indexOf(json.charAt(end)) < 0) {
+                        end++;
+                    }
+                    if (end > cursor) {
+                        return json.substring(cursor, end);
+                    }
+                }
+            }
+            index = json.indexOf(needle, index + needle.length());
+        }
+        return null;
+    }
+
+    /** success 这类字段可能是布尔也可能是字符串，统一判断是否为 false。 */
+    public static boolean isFalse(String json, String fieldName) {
+        String value = findScalar(json, fieldName);
+        return value != null && "false".equalsIgnoreCase(value.trim());
+    }
+
     /** 缩进格式化，格式化失败时原样返回。 */
     public static String prettyPrint(String json) {
         if (json == null || json.isEmpty()) {
@@ -136,4 +172,3 @@ public final class JsonUtils {
         }
     }
 }
-

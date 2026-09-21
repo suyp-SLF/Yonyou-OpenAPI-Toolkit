@@ -78,11 +78,21 @@ public final class FormPanel extends JPanel {
     }
 
     public static JTextArea monoArea(int rows) {
-        JTextArea area = new JTextArea(rows, 60);
+        JTextArea area = new JTextArea(rows, 40);
         area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         area.setLineWrap(true);
         area.setWrapStyleWord(true);
         return area;
+    }
+
+    /** 把内容套进纵向滚动容器，窗口再小也能滚到最下面。 */
+    public static JScrollPane scrollable(JComponent content) {
+        JScrollPane pane = new JScrollPane(content,
+                JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+                JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        pane.setBorder(null);
+        pane.getVerticalScrollBar().setUnitIncrement(16);
+        return pane;
     }
 
     public static JTextField readOnlyField() {

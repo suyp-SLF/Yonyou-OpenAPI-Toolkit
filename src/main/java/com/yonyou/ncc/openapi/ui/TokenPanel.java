@@ -39,17 +39,17 @@ public final class TokenPanel extends JPanel {
     private final JPasswordField passwordField = new JPasswordField();
     private final JTextField accessTokenField = FormPanel.readOnlyField();
     private final JTextField securityKeyField = FormPanel.readOnlyField();
-    private final JTextArea responseArea = FormPanel.monoArea(10);
+    private final JTextArea responseArea = FormPanel.monoArea(8);
 
     public TokenPanel() {
         setLayout(new BorderLayout());
-        add(buildContent(), BorderLayout.NORTH);
+        add(FormPanel.scrollable(buildContent()), BorderLayout.CENTER);
         grantTypeBox.addActionListener(e -> updateFieldState());
         updateFieldState();
     }
 
     private JPanel buildContent() {
-        JPanel container = new JPanel();
+        JPanel container = new ScrollablePanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
@@ -63,7 +63,7 @@ public final class TokenPanel extends JPanel {
         form.addRow("业务中心/账套编码(biz_center)", bizCenterField);
         form.addRow("应用编码(client_id)", clientIdField);
         form.addRow("应用密文(client_secret)", clientSecretField);
-        form.addRow("公钥(publicKey)", FormPanel.scroll(publicKeyArea, 70));
+        form.addRow("公钥(publicKey)", FormPanel.scroll(publicKeyArea, 56));
         form.addRow("token 模式(grant_type)", grantTypeBox);
         form.addRow("用户名(username)", userNameField);
         form.addRow("密码(password)", passwordField);
@@ -80,7 +80,7 @@ public final class TokenPanel extends JPanel {
         JPanel responsePanel = new JPanel(new BorderLayout());
         responsePanel.setBorder(BorderFactory.createTitledBorder("原始响应"));
         responseArea.setEditable(false);
-        responsePanel.add(FormPanel.scroll(responseArea, 200), BorderLayout.CENTER);
+        responsePanel.add(FormPanel.scroll(responseArea, 180), BorderLayout.CENTER);
         container.add(responsePanel);
         return container;
     }
@@ -119,9 +119,12 @@ public final class TokenPanel extends JPanel {
             TokenInfo token = client.fetchToken(config, grantType);
             accessTokenField.setText(token.getAccessToken());
             securityKeyField.setText(token.getSecurityKey());
+            String expiresIn = JsonUtils.findScalar(token.getRawResponse(), "expires_in");
+            String securityLevel = JsonUtils.findScalar(token.getRawResponse(), "security_level");
             return "token 生成成功\ntoken 接口：" + config.tokenUrl()
                     + "\naccess_token：" + token.getAccessToken()
                     + "\nsecurity_key：" + token.getSecurityKey()
+                    + "\n有效期(秒)：" + expiresIn + "　security_level：" + securityLevel
                     + "\n响应：\n" + JsonUtils.prettyPrint(token.getRawResponse());
         });
     }

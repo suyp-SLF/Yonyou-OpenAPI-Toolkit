@@ -4,6 +4,7 @@ import com.yonyou.ncc.openapi.model.CallResult;
 import com.yonyou.ncc.openapi.model.OpenApiConfig;
 import com.yonyou.ncc.openapi.model.TokenInfo;
 import com.yonyou.ncc.openapi.service.OpenApiClient;
+import com.yonyou.ncc.openapi.service.ServerHints;
 import com.yonyou.ncc.openapi.settings.OpenApiSettings;
 import com.yonyou.ncc.openapi.util.JsonUtils;
 
@@ -36,16 +37,16 @@ public final class SendPanel extends JPanel {
     private final JTextField accessTokenField = new JTextField();
     private final JTextField securityKeyField = new JTextField();
     private final JComboBox<String> secretLevelBox = new JComboBox<>(OpenApiConfig.SecretLevel.ALL);
-    private final JTextArea requestBodyArea = FormPanel.monoArea(5);
-    private final JTextArea logArea = FormPanel.monoArea(14);
+    private final JTextArea requestBodyArea = FormPanel.monoArea(4);
+    private final JTextArea logArea = FormPanel.monoArea(10);
 
     public SendPanel() {
         setLayout(new BorderLayout());
-        add(buildContent(), BorderLayout.NORTH);
+        add(FormPanel.scrollable(buildContent()), BorderLayout.CENTER);
     }
 
     private JPanel buildContent() {
-        JPanel container = new JPanel();
+        JPanel container = new ScrollablePanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
@@ -57,11 +58,11 @@ public final class SendPanel extends JPanel {
         form.addRow("服务地址(baseUrl)", baseUrlField);
         form.addRow("接口路径(apiUrl)", apiUrlField);
         form.addRow("应用编码(client_id)", clientIdField);
-        form.addRow("公钥(publicKey)", FormPanel.scroll(publicKeyArea, 60));
+        form.addRow("公钥(publicKey)", FormPanel.scroll(publicKeyArea, 56));
         form.addRow("access_token", accessTokenField);
         form.addRow("security_key", securityKeyField);
         form.addRow("安全级别(secret_level)", secretLevelBox);
-        form.addRow("请求体", FormPanel.scroll(requestBodyArea, 100));
+        form.addRow("请求体", FormPanel.scroll(requestBodyArea, 80));
         container.add(form);
 
         container.add(buttons());
@@ -70,7 +71,7 @@ public final class SendPanel extends JPanel {
         JPanel logPanel = new JPanel(new BorderLayout());
         logPanel.setBorder(BorderFactory.createTitledBorder("调用日志"));
         logArea.setEditable(false);
-        logPanel.add(FormPanel.scroll(logArea, 260), BorderLayout.CENTER);
+        logPanel.add(FormPanel.scroll(logArea, 240), BorderLayout.CENTER);
         container.add(logPanel);
         return container;
     }
@@ -124,6 +125,15 @@ public final class SendPanel extends JPanel {
             if (!result.getResponseBody().equals(result.getRawResponseBody())) {
                 builder.append("\n\n原始响应：\n").append(result.getRawResponseBody());
             }
+            String code = JsonUtils.findString(result.getResponseBody(), "code");
+            String message = JsonUtils.findString(result.getResponseBody(), "message");
+            if (JsonUtils.isFalse(result.getResponseBody(), "success")) {
+                builder.append("\n\n服务端结果：").append(ServerHints.summarize(code, message));
+                String hint = ServerHints.hintFor(message);
+                if (!hint.isEmpty()) {
+                    builder.append("\n提示：").append(hint);
+                }
+            }
             return builder.toString();
         });
     }
@@ -151,4 +161,3 @@ public final class SendPanel extends JPanel {
         return config;
     }
 }
-

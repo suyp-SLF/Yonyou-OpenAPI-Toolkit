@@ -29,7 +29,9 @@
 
 - 手工粘贴 `access_token` / `security_key` 即可发请求，与「生成token」解耦
 - 按 `secret_level`(L0~L4) 自动处理请求体加密与响应体解密
+- `apiUrl` 既可以是相对路径（与 `baseUrl` 拼接），也可以直接粘贴**完整 URL**（此时不再拼 `baseUrl`）
 - 日志输出 HTTP 状态、请求 URL、请求头、请求体、还原后的响应与原始响应，可整段复制贴给后端
+- 服务端返回 `success=false` 时，会额外提炼 `code` / `message` 并给出排查提示（见下）
 
 ### 设置页
 
@@ -241,6 +243,32 @@ java -cp /tmp/flowcheck FlowCheck
 - **L1~L4 解密报错**：`security_key` 必须是「生成token」返回的那个值；换 token 后旧 `security_key` 立即失效。
 - **RSA 报 `Wrong algorithm`**：这是老 jar 在 JDK 21 上的已知问题（`SecretKeySpec` 算法名写成 `AES/CTR/NoPadding`），插件已自行实现，不依赖该 jar。
 - **构建下载慢或失败**：把 `intellijPlatform { local(...) }` 指向本机 IDEA 即可跳过平台下载，见「平台依赖来源」。
+
+### 服务端报错对照（实测返回，插件会直接给出提示）
+
+| 服务端返回 | 原因 | 处理 |
+| --- | --- | --- |
+| `invalid_request, Bad request content type. Expecting: application/x-www-form-urlencoded` | 方法/Content-Type 不对 | 必须 `POST` + `Content-Type: application/x-www-form-urlencoded`（Body 用 `x-www-form-urlencoded`，不能用 none / form-data / raw JSON） |
+| `解密失败Decryption error` | `client_secret` 传了明文 | 必须传「应用公钥加密后的密文」；插件会自动加密并 URL 编码 |
+| `无效的账套编码，请检查` / `Invalid NCCloud busiCenter` | `biz_center` 查不到（`sm_busicenter.code`） | 填该环境真实的业务中心编码，它同时决定 token 绑定哪个数据源（账套） |
+| `Third-party applications are not registered` | `client_id` 没注册 | 核对应用编码 |
+| `Third-party applications are not authorized` | `client_secret` 解出来与应用密文不一致 | 核对应用密文与公钥是否同一套 |
+| `Failed to verify signature for get token` | 取 token 的签名不对 | `signature = SHA256(client_id + 明文client_secret + 公钥 + 盐值)` |
+| `Failed to verify signature for call api` | 业务接口签名不对 | `signature = SHA256(client_id + 明文请求体 + 公钥 + 盐值)`，用的是解密后的明文请求体 |
+| `第三方应用【x】没有【/...】的权限` | 应用未授权该 API | 去开放平台给应用关联/授权该接口 |
+| `The access_token has expired` | token 过期 | 重新取 token |
+
+## 已对接环境的实测结论
+
+对 NCC 环境 `http://192.168.4.43:8088/` 用真实应用跑通过：
+
+- **取 token**：`biz_center=BIP` + `client_id=yunjian`，插件（`OpenApiClient.fetchToken`）与手工 curl 均返回
+  `{"success":true,"data":{"access_token":"...","security_key":"...","security_level":"L0",...}}`
+- **调业务接口**：`POST /nccloud/api/riaorg/orgmanage/org/queryOrgByCode`，服务端**验签通过**，返回业务层结果
+  `{"success":false,"code":"1000000010","message":"第三方应用【yunjian】没有【...】的权限"}` —— 说明插件发送的
+  `access_token` / `client_id` / `signature` / `repeat_check` / `ucg_flag` 头与 `content-type` 都被服务端接受，剩下的只是应用授权配置
+- 服务端校验顺序（取自 `AccessTokenController#getToken` 与 `OpenCloudSecurityFilter#checkSign` 反编译）：
+  `biz_center` → 应用是否注册 → `client_secret` 解密比对 → 验签 → 签发 token；业务请求先按 `secret_level` 解密请求体，再用**明文请求体**验签
 
 ## License
 

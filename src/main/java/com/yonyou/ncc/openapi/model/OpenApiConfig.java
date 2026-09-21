@@ -106,6 +106,9 @@ public class OpenApiConfig {
 
     public String apiFullUrl() {
         String path = apiUrl == null ? "" : apiUrl.trim();
+        if (path.startsWith("http://") || path.startsWith("https://")) {
+            return path;
+        }
         while (path.startsWith("/")) {
             path = path.substring(1);
         }
@@ -135,4 +138,3 @@ public class OpenApiConfig {
         }
     }
 }
-

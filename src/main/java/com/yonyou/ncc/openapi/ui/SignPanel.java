@@ -41,22 +41,22 @@ public final class SignPanel extends JPanel {
     private final JPasswordField clientSecretField = new JPasswordField();
     private final JTextField userNameField = new JTextField();
     private final JPasswordField passwordField = new JPasswordField();
-    private final JTextArea publicKeyArea = FormPanel.monoArea(4);
-    private final JTextArea requestBodyArea = FormPanel.monoArea(4);
-    private final JTextArea customTextArea = FormPanel.monoArea(4);
+    private final JTextArea publicKeyArea = FormPanel.monoArea(3);
+    private final JTextArea requestBodyArea = FormPanel.monoArea(3);
+    private final JTextArea customTextArea = FormPanel.monoArea(3);
     private final JTextField signField = FormPanel.readOnlyField();
     private final JTextField saltField = FormPanel.readOnlyField();
-    private final JTextArea signedTextField = FormPanel.monoArea(3);
+    private final JTextArea signedTextField = FormPanel.monoArea(2);
 
     public SignPanel() {
         setLayout(new BorderLayout());
-        add(buildContent(), BorderLayout.NORTH);
+        add(FormPanel.scrollable(buildContent()), BorderLayout.CENTER);
         modeBox.addActionListener(e -> updateFieldState());
         updateFieldState();
     }
 
     private JPanel buildContent() {
-        JPanel container = new JPanel();
+        JPanel container = new ScrollablePanel();
         container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
         container.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
@@ -72,9 +72,9 @@ public final class SignPanel extends JPanel {
         form.addRow("应用密文(client_secret)", clientSecretField);
         form.addRow("用户名(username)", userNameField);
         form.addRow("密码(password)", passwordField);
-        form.addRow("公钥(publicKey)", FormPanel.scroll(publicKeyArea, 80));
-        form.addRow("请求体(请求签名用)", FormPanel.scroll(requestBodyArea, 80));
-        form.addRow("自定义原文", FormPanel.scroll(customTextArea, 80));
+        form.addRow("公钥(publicKey)", FormPanel.scroll(publicKeyArea, 56));
+        form.addRow("请求体(请求签名用)", FormPanel.scroll(requestBodyArea, 56));
+        form.addRow("自定义原文", FormPanel.scroll(customTextArea, 56));
         container.add(form);
 
         container.add(buttons());
@@ -190,4 +190,3 @@ public final class SignPanel extends JPanel {
         return field.getText() == null ? "" : field.getText().trim();
     }
 }
-

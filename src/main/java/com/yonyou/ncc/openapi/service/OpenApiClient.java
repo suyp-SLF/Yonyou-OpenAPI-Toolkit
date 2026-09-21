@@ -72,13 +72,10 @@ public final class OpenApiClient {
         String code = JsonUtils.findString(body, "code");
         String message = JsonUtils.findString(body, "message");
         StringBuilder builder = new StringBuilder("获取 token 失败，HTTP ").append(status);
-        if (code != null && !code.isEmpty()) {
-            builder.append("，code=").append(code);
-        }
-        builder.append("：").append(message == null || message.isEmpty() ? body : message);
-        if (message != null && (message.contains("账套") || message.contains("业务中心"))) {
-            builder.append("\n提示：biz_center 要用该环境真实的业务中心/账套编码，多中心环境下每个中心编码不同，"
-                    + "可在 NCC 系统管理的业务中心/账套列表里查，或直接问系统管理员。");
+        builder.append("，").append(ServerHints.summarize(code, message == null || message.isEmpty() ? body : message));
+        String hint = ServerHints.hintFor(message);
+        if (!hint.isEmpty()) {
+            builder.append("\n提示：").append(hint);
         }
         return builder.toString();
     }
