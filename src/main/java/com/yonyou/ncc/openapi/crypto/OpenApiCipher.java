@@ -136,6 +136,11 @@ public final class OpenApiCipher {
         if (normalized.isEmpty()) {
             throw new IllegalArgumentException("公钥为空");
         }
+        if (normalized.length() != PublicKeyCheck.EXPECTED_BASE64_LENGTH) {
+            throw new IllegalArgumentException("公钥长度异常：清洗后 " + normalized.length()
+                    + " 字符，2048 位公钥应为 " + PublicKeyCheck.EXPECTED_BASE64_LENGTH
+                    + " 字符（多半是复制被截断）");
+        }
         try {
             return Base64.getMimeDecoder().decode(normalized);
         } catch (Exception e) {

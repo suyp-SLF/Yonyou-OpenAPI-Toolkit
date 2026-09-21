@@ -1,6 +1,7 @@
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import com.yonyou.ncc.openapi.crypto.OpenApiCipher;
+import com.yonyou.ncc.openapi.crypto.PublicKeyCheck;
 import com.yonyou.ncc.openapi.crypto.Signatures;
 import com.yonyou.ncc.openapi.model.CallResult;
 import com.yonyou.ncc.openapi.model.OpenApiConfig;
@@ -201,6 +202,18 @@ public class FlowCheck {
                     Signatures.normalizeKey("-----BEGIN PUBLIC KEY-----\n" + publicKey + "\n-----END PUBLIC KEY-----"));
             check("空公钥报错可读", "true", String.valueOf(emptyKeyMessage().contains("密文生成失败")));
             check("空公钥报错带排查提示", "true", String.valueOf(emptyKeyMessage().contains("公钥为空")));
+
+            String report = PublicKeyCheck.describe(publicKey);
+            check("公钥体检：长度符合 2048 位", "true", String.valueOf(report.contains("392")));
+            check("公钥体检：结论可用", "true", String.valueOf(report.contains("结论：公钥可用")));
+            check("公钥体检：截断时给出截断结论", "true",
+                    String.valueOf(PublicKeyCheck.describe(publicKey.substring(0, 200)).contains("截断")));
+            check("公钥体检：空值有结论", "true",
+                    String.valueOf(PublicKeyCheck.describe("").contains("公钥为空")));
+            check("公钥体检：非 Base64 有结论", "true",
+                    String.valueOf(PublicKeyCheck.describe("!!!!not-base64!!!!").contains("不是合法 Base64")));
+            check("截断公钥加密报长度异常", "true",
+                    String.valueOf(shortKeyMessage(publicKey.substring(0, 200)).contains("复制被截断")));
         } finally {
             server.stop(0);
         }
@@ -229,6 +242,15 @@ public class FlowCheck {
     private static String emptyKeyMessage() {
         try {
             new SignService().clientSecretCipher(CLIENT_SECRET, "");
+            return "未报错";
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    private static String shortKeyMessage(String shortKey) {
+        try {
+            new SignService().clientSecretCipher(CLIENT_SECRET, shortKey);
             return "未报错";
         } catch (Exception e) {
             return e.getMessage();

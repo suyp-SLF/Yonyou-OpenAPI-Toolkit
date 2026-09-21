@@ -1,6 +1,7 @@
 package com.yonyou.ncc.openapi.ui;
 
 import com.yonyou.ncc.openapi.model.OpenApiConfig;
+import com.yonyou.ncc.openapi.crypto.PublicKeyCheck;
 import com.yonyou.ncc.openapi.model.SignResult;
 import com.yonyou.ncc.openapi.service.SignService;
 import com.yonyou.ncc.openapi.settings.DraftStore;
@@ -117,6 +118,11 @@ public final class SignPanel extends JPanel {
         JButton copyCipher = new JButton("复制密文");
         copyCipher.addActionListener(e -> copyCipher());
         panel.add(copyCipher);
+
+        JButton checkKey = new JButton("校验公钥");
+        checkKey.addActionListener(e -> JOptionPane.showMessageDialog(this,
+                PublicKeyCheck.describe(publicKeyArea.getText()), "公钥体检", JOptionPane.INFORMATION_MESSAGE));
+        panel.add(checkKey);
 
         JButton load = new JButton("从设置载入");
         load.addActionListener(e -> loadFromSettings());
