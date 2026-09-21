@@ -189,6 +189,18 @@ public class FlowCheck {
             draft.set(DraftStore.CLIENT_ID, "another");
             check("值变化继续广播", "3", String.valueOf(notifications.get()));
             check("null 归一为空串", "", draftGetNull(draft));
+
+            String cleanKey = publicKey;
+            String dirtyKey = "\"" + wrap(publicKey) + "\"";
+            check("公钥清洗：换行/引号/转义都被去掉", cleanKey, Signatures.normalizeKey(dirtyKey));
+            check("脏公钥与干净公钥算出的签名一致", signService.loginSign(CLIENT_ID, CLIENT_SECRET, cleanKey).getSign(),
+                    signService.loginSign(CLIENT_ID, CLIENT_SECRET, dirtyKey).getSign());
+            check("脏公钥也能生成可解密的密文", CLIENT_SECRET,
+                    rsaDecrypt(keyPair, signService.clientSecretCipher(CLIENT_SECRET, dirtyKey)));
+            check("PEM 头尾也被清掉", cleanKey,
+                    Signatures.normalizeKey("-----BEGIN PUBLIC KEY-----\n" + publicKey + "\n-----END PUBLIC KEY-----"));
+            check("空公钥报错可读", "true", String.valueOf(emptyKeyMessage().contains("密文生成失败")));
+            check("空公钥报错带排查提示", "true", String.valueOf(emptyKeyMessage().contains("公钥为空")));
         } finally {
             server.stop(0);
         }
@@ -203,6 +215,24 @@ public class FlowCheck {
     private static String draftGetNull(DraftStore draft) {
         draft.set(DraftStore.API_URL, null);
         return draft.get(DraftStore.API_URL);
+    }
+
+    /** 每 64 字符换行的公钥，模拟从文档/界面复制出来的形态。 */
+    private static String wrap(String value) {
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < value.length(); i += 64) {
+            builder.append(value, i, Math.min(value.length(), i + 64)).append('\n');
+        }
+        return builder.toString();
+    }
+
+    private static String emptyKeyMessage() {
+        try {
+            new SignService().clientSecretCipher(CLIENT_SECRET, "");
+            return "未报错";
+        } catch (Exception e) {
+            return e.getMessage();
+        }
     }
 
     /** 直接给完整 URL 时不应再拼 baseUrl。 */

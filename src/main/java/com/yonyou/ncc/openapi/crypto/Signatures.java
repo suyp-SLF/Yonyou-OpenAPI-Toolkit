@@ -26,6 +26,21 @@ public final class Signatures {
         return value == null ? "" : LINE_BREAKS.matcher(value).replaceAll("");
     }
 
+    /**
+     * 公钥清洗：去掉真实换行、字面量 \n \r、引号、PEM 头尾与所有空白。
+     * 从 Java 代码/文档里复制过来的公钥常带 \" 与 \n 转义，不清洗会导致盐值和加密都对不上。
+     */
+    public static String normalizeKey(String value) {
+        if (value == null) {
+            return "";
+        }
+        String normalized = value.replace("\\r", "").replace("\\n", "");
+        normalized = normalized.replace("\"", "").replace("'", "");
+        normalized = normalized.replaceAll("-----BEGIN[^-]*-----", "")
+                .replaceAll("-----END[^-]*-----", "");
+        return normalized.replaceAll("\\s", "");
+    }
+
     public static String sha256Hex(String data) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -53,7 +68,8 @@ public final class Signatures {
      */
     public static SignResult sign(String data, String key) {
         String text = data == null ? "" : data;
-        String salt = deriveSalt(key);
+        String normalizedKey = normalizeKey(key);
+        String salt = deriveSalt(normalizedKey);
         return new SignResult(sha256Hex(text + salt), salt, text);
     }
 
@@ -69,4 +85,3 @@ public final class Signatures {
         return builder.toString();
     }
 }
-

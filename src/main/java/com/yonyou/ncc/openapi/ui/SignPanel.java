@@ -164,7 +164,12 @@ public final class SignPanel extends JPanel {
             signField.setText(result.getSign());
             saltField.setText(result.getSalt());
             signedTextField.setText(result.getSignedText());
-            cipherArea.setText(cipherText(mode));
+            try {
+                cipherArea.setText(cipherText(mode));
+            } catch (Exception cipherError) {
+                // 密文失败不影响签名结果展示，单独把原因写在密文栏
+                cipherArea.setText(cipherError.getMessage());
+            }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "签名计算失败：" + ex.getMessage(),
                     "Yonyou OpenAPI", JOptionPane.ERROR_MESSAGE);

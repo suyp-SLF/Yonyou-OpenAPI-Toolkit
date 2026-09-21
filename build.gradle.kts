@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.yonyou.ncc"
-version = "1.0.1"
+version = "1.0.2"
 
 repositories {
     mavenCentral()

@@ -11,17 +11,17 @@ public final class SignService {
 
     /** 客户端模式取 token 时的签名：client_id + client_secret + 公钥。 */
     public SignResult loginSign(String clientId, String clientSecret, String publicKey) {
-        return sign(join(clientId, clientSecret, publicKey), publicKey);
+        return Signatures.sign(join(clientId, clientSecret, Signatures.normalizeKey(publicKey)), publicKey);
     }
 
     /** 用户名密码模式取 token 时的签名：client_id + client_secret + 用户名 + 密码 + 公钥。 */
     public SignResult passwordSign(String clientId, String clientSecret, String userName, String password, String publicKey) {
-        return sign(join(clientId, clientSecret, userName, password, publicKey), publicKey);
+        return Signatures.sign(join(clientId, clientSecret, userName, password, Signatures.normalizeKey(publicKey)), publicKey);
     }
 
     /** 业务接口调用的签名：client_id + 请求体 + 公钥。 */
     public SignResult apiSign(String clientId, String requestBody, String publicKey) {
-        return sign(join(clientId, requestBody, publicKey), publicKey);
+        return Signatures.sign(join(clientId, requestBody, Signatures.normalizeKey(publicKey)), publicKey);
     }
 
     /** 指定参与签名的原文与公钥，直接计算签名。 */
@@ -37,8 +37,12 @@ public final class SignService {
         try {
             return OpenApiCipher.rsaEncrypt(publicKey, clientSecret);
         } catch (Exception e) {
-            throw new IllegalStateException("密文生成失败：" + e.getClass().getSimpleName()
-                    + (e.getMessage() == null ? "" : " - " + e.getMessage()), e);
+            String reason = e instanceof IllegalArgumentException && e.getMessage() != null
+                    ? e.getMessage()
+                    : e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " - " + e.getMessage());
+            throw new IllegalStateException("密文生成失败：" + reason
+                    + "。请确认「公钥」是应用管理里那段完整的 Base64（以 MIIBIjANBgkqhkiG9w0BAQEF 开头），"
+                    + "去掉引号、换行与 \\n 转义后再试；签名只用公钥字符串，不会因此报错，所以能算签名不代表公钥可用。", e);
         }
     }
 

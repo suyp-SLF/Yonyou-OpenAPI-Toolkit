@@ -34,7 +34,7 @@ public final class OpenApiCipher {
     /** 公钥直接加密，RSA/ECB/OAEPWithSHA-256AndMGF1Padding，超长内容按 117 字节分块。 */
     public static String rsaEncrypt(String publicKeyBase64, String data) throws Exception {
         PublicKey publicKey = KeyFactory.getInstance("RSA")
-                .generatePublic(new X509EncodedKeySpec(decodeBase64(publicKeyBase64)));
+                .generatePublic(new X509EncodedKeySpec(decodePublicKey(publicKeyBase64)));
         Cipher cipher = Cipher.getInstance(RSA_TRANSFORMATION);
         OAEPParameterSpec spec = new OAEPParameterSpec("SHA-256", "MGF1",
                 new MGF1ParameterSpec("SHA-256"), PSource.PSpecified.DEFAULT);
@@ -128,6 +128,19 @@ public final class OpenApiCipher {
 
     public static byte[] decodeBase64(String value) {
         return Base64.getMimeDecoder().decode(Signatures.stripLineBreaks(value));
+    }
+
+    /** 公钥先清洗再解码，顺手给出可读的错误信息。 */
+    private static byte[] decodePublicKey(String publicKeyBase64) {
+        String normalized = Signatures.normalizeKey(publicKeyBase64);
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("公钥为空");
+        }
+        try {
+            return Base64.getMimeDecoder().decode(normalized);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("公钥不是合法的 Base64（清洗后长度 " + normalized.length() + "）", e);
+        }
     }
 
     private static SecretKeySpec symKey(String securityKey) {
