@@ -289,6 +289,20 @@ java -cp /tmp/flowcheck FlowCheck
 | `Failed to verify signature for call api` | 业务接口签名不对 | `signature = SHA256(client_id + 明文请求体 + 公钥 + 盐值)`，用的是解密后的明文请求体 |
 | `第三方应用【x】没有【/...】的权限` | 应用未授权该 API | 去开放平台给应用关联/授权该接口 |
 | `The access_token has expired` | token 过期 | 重新取 token |
+| `appid参数缺失` | 业务请求**少传 `client_id` 请求头**（服务端用它查第三方应用） | 在「发送接口」填好「应用编码(client_id)」，发送时自动带上该头 |
+| `token失效，请重新获取token` | `access_token` 失效或不是本环境签发 | 去「生成token」重新取（会自动同步到「发送接口」） |
+
+业务接口请求头（实测被服务端接受的组合）：
+
+```
+POST {baseUrl}{apiUrl}
+content-type: application/json;charset=utf-8
+access_token: <生成token 得到的 access_token>
+client_id: <应用编码>          ← 缺这个就报 appid参数缺失
+signature: SHA256(client_id + 明文请求体 + 公钥 + 盐值)
+repeat_check: Y
+ucg_flag: y
+```
 
 ## 已对接环境的实测结论
 

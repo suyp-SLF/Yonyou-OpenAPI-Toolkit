@@ -157,6 +157,10 @@ public class FlowCheck {
                             .contains("明文请求体")));
             check("权限报错提示指向开放平台授权", "true",
                     String.valueOf(ServerHints.hintFor("第三方应用【yunjian】没有【/x】的权限").contains("授权")));
+            check("appid 缺失提示指向 client_id 头", "true",
+                    String.valueOf(ServerHints.hintFor("appid参数缺失").contains("client_id 请求头")));
+            check("token失效提示指向重新取 token", "true",
+                    String.valueOf(ServerHints.hintFor("token失效，请重新获取token").contains("生成token")));
 
             String tokenLike = "{\"success\":true,\"data\":{\"access_token\":\"T\",\"expires_in\":1000000,"
                     + "\"security_level\":\"L0\"}}";

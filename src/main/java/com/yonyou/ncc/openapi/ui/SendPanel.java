@@ -125,6 +125,11 @@ public final class SendPanel extends JPanel {
             PanelSupport.append(logArea, "请先填写 access_token（可用「生成token」入口获取）。");
             return;
         }
+        if (config.getClientId().isEmpty()) {
+            PanelSupport.append(logArea, "请先填写「应用编码(client_id)」：业务接口要用它做鉴权，"
+                    + "缺失时服务端会返回「appid参数缺失」。");
+            return;
+        }
         if (config.apiFullUrl().isEmpty()) {
             PanelSupport.append(logArea, "请先填写服务地址与接口路径。");
             return;

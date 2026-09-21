@@ -42,6 +42,13 @@ public final class ServerHints {
         if (message.contains("access_token has expired") || message.contains("has expired")) {
             return "access_token 已失效，重新取一次 token 再调用。";
         }
+        if (message.contains("appid参数缺失")) {
+            return "业务接口少传了 client_id 请求头（服务端用它查第三方应用）。"
+                    + "在「发送接口」窗口填好「应用编码(client_id)」再发送，它会随参数同步自动带过来。";
+        }
+        if (message.contains("token失效")) {
+            return "access_token 已失效或不是本环境签发的，去「生成token」重新取一个（会自动同步到本窗口）。";
+        }
         if (message.contains("权限")) {
             return "应用没有该接口的权限：去开放平台给这个应用关联/授权该 API 后再试。";
         }
@@ -58,4 +65,3 @@ public final class ServerHints {
         return builder.toString();
     }
 }
-
